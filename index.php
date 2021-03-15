@@ -103,12 +103,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <!-- Bootstrap css 5.0.0 -->
+    <!-- Bootstrap css v5.0.0 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
-    <!-- Bootstrap js 5.0.0 -->
+    <!-- jQuery v3.5.1 -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <!-- Bootstrap bundle js v5.0.0 -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
-    <!-- jQuery 3.6.0 -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
   </head>
   <body>
     <div class="container">
@@ -166,19 +166,62 @@
       accordionBlock.init();
     };
 
+    // Popover Block
+    var popoverBlock = {
+      option: {
+        html: true,
+        container: 'body',
+        content: '',
+        placement: 'bottom',
+        customClass: 'mw-100',
+      },
+      build: function ($el, data) {
+
+        let worktreeDel = $('<span>')
+          .addClass('m-1')
+          .text(`git worktree remove --force ${data.worktree}`)
+          .prop('outerHTML');
+
+        let branchDel = $('<span>')
+          .addClass('m-1')
+          .text(`git branch --delete --force ${data.branch}`)
+          .prop('outerHTML');
+
+        let originBranchDel = $('<span>')
+          .addClass('m-1')
+          .text(`git push origin -d ${data.branch}`)
+          .prop('outerHTML');
+
+        let option = $.extend(true, {}, this.option, {
+          content: [worktreeDel, branchDel, originBranchDel].join('<br>'),
+        });
+
+        // new bootstrap.Popover
+        $el.popover(option);
+      },
+    }
+
     // Table block
     var tableBlock = {
       $el: $($('#tmpl-table').prop('innerHTML')),
       build: function (data) {
         let $table = this.$el.clone();
         let $tbody = $table.find('tbody');
+        let deleteIcon = '<svg id="Layer_1_1_" enable-background="new 0 0 64 64" height="24" viewBox="0 0 64 64" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m14.296 25.248 4.475 34.013c.131.995.979 1.739 1.983 1.739h22.492c1.004 0 1.852-.744 1.983-1.739l3.455-26.261 1.316-10h-33.456z" fill="#57a5ff"/><path d="m30 31v22c0 1.105.895 2 2 2s2-.895 2-2v-22c0-1.105-.895-2-2-2s-2 .895-2 2z" fill="#f2f8ff"/><path d="m22 31v22c0 1.105.895 2 2 2s2-.895 2-2v-22c0-1.105-.895-2-2-2s-2 .895-2 2z" fill="#f2f8ff"/><path d="m38 31v22c0 1.105.895 2 2 2s2-.895 2-2v-22c0-1.105-.895-2-2-2s-2 .895-2 2z" fill="#f2f8ff"/><path d="m30 17 4 2h5l-2-5-4-1z" fill="#004fa8"/><path d="m48 10-5 1v2l1 4 8-1-3-4z" fill="#004fa8"/><path d="m30.172 3.716c-.781-.781-2.047-.781-2.828 0l-22.628 22.627c-.781.781-.781 2.047 0 2.828l2.828 2.829 25.456-25.456z" fill="#57a5ff"/><path d="m45.229 59.261.391-2.973c-12.834-4.507-21.688-17.063-20.897-31.305l.11-1.983h-8.289l-2.248 2.248 4.475 34.013c.131.995.979 1.739 1.983 1.739h22.492c1.004 0 1.852-.744 1.983-1.739z" fill="#303030" opacity=".12"/><path d="m27.029 8.971-21.257 21.257 1.772 1.772 25.456-25.456-2.828-2.828c-.781-.781-2.047-.781-2.828 0l-.314.314c1.364 1.364 1.364 3.576-.001 4.941z" fill="#303030" opacity=".12"/><path d="m49 12-1-2-1.818.364.818 1.636 3 4-6.061.758.061.242 8-1z" fill="#303030" opacity=".12"/><path d="m35 15 1.6 4h2.4l-2-5-4-1-.947 1.263z" fill="#303030" opacity=".12"/><path d="m10.373 20.686-2.121-2.121c-1.17-1.169-1.17-3.073 0-4.243l7.071-7.071c1.169-1.17 3.072-1.171 4.243 0l2.121 2.121-1.414 1.414-2.121-2.121c-.39-.39-1.025-.389-1.415 0l-7.071 7.071c-.39.39-.39 1.024 0 1.415l2.121 2.121z" fill="#57a5ff"/><g fill="#004fa8"><path d="m44 2h2v2h-2z"/><path d="m54.022 9.793-1.219-1.586c2.667-2.05 6.089-2.848 9.393-2.188l-.392 1.961c-2.734-.545-5.571.115-7.782 1.813z"/><path d="m57 12h2v2h-2z"/><path d="m50 7h-2c0-2.757 2.243-5 5-5v2c-1.654 0-3 1.346-3 3z"/></g></svg>';
 
         // Build table row
         $.each(data, function (idx, row) {
+          let $deleteBtn = $('<button>')
+            .addClass('btn ctrl-delete-btn')
+            .html(deleteIcon);
+
+          // Build popover
+          popoverBlock.build($deleteBtn, row);
+
           $('<tr>')
-            .append($('<th>').prop({scope: 'row'}).text(idx))
-            .append($('<td>').text(row.worktree))
-            .append($('<td>').text(row.branch))
+            .append($('<th>').prop({scope: 'row'}).append($deleteBtn))
+            .append($('<td>').addClass('align-middle').text(row.worktree))
+            .append($('<td>').addClass('align-middle').text(row.branch))
             .appendTo($tbody);
         });
 
