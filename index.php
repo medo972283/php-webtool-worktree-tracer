@@ -1,38 +1,68 @@
 
 <?php
     /**
-     * Get a list of projects which are not generate from the worktree
+     * Get a list of projects exclude the worktrees directory
      *
      * @param  string  $rootDir
      * @return array
      */
     function getNativeProjectList($rootDir) {
 
-        // Define the name list for scandir() to filter out
+        // Define the file name list for scandir() to filter out
         $excludeList = ['.', '..', '.vscode-server'];
 
-        // Exclude specified file name
-        $scanList = array_diff(scandir($rootDir), $excludeList);
+        // Get the project list under the root directory
+        $projectList = array_diff(scandir($rootDir), $excludeList);
 
         $result = [];
 
-        foreach ($scanList as $file) {
+        foreach ($projectList as $fileName) {
 
             // Get absolute path of file
-            $filePath = join(DIRECTORY_SEPARATOR, [$rootDir, $file]);
+            $filePath = join(DIRECTORY_SEPARATOR, [$rootDir, $fileName]);
 
             // Determine whether the file is a directory
             if (is_dir($filePath)) {
 
-                // Get absolute path of '.git'
+                // .git file path
                 $gitPath = join(DIRECTORY_SEPARATOR, [$filePath, '.git']);
 
-                // Only collect the file which contains '.git' of directory type, cuz the '.git' created by worktree is just a file to show the gitdir link
-                is_dir($gitPath) && $result[] = $file;
+                // Only collect the file which contains '.git' of directory type, cuz the '.git' created by worktree is just a plaintext to show the gitdir link
+                is_dir($gitPath) && $result[] = $fileName;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Execute bash command of git to get git log info
+     *
+     * @param  string  $gitPath
+     * @return array
+     */
+    function _getGitDetail($gitPath)
+    {
+        // Get absolute path of git HEAD file
+        $gitHeadPath = join(DIRECTORY_SEPARATOR, [$gitPath, 'HEAD']);
+
+        // Execute git log bash to get last commit raw body (unwrapped subject and body)
+        $commitBody = [];
+        exec('git --git-dir=' . $gitPath . ' log --pretty="%B" -n1', $commitBody);
+
+        // Execute git log bash to get last commit ID in short
+        $commitHashID = trim(exec('git --git-dir=' . $gitPath . ' log --pretty="%h" -n1'));
+
+        // Execute git log bash to get last commit date in ISO 8601-like format
+        $committerDate = trim(exec('git --git-dir=' . $gitPath . ' log --pretty="%ci" -n1'));
+
+        // Return the git info
+        return [
+            'branch' => end(explode(DIRECTORY_SEPARATOR, file_get_contents($gitHeadPath))),
+            'commitBody' => implode('<br>', $commitBody),
+            'commitID' => $commitHashID,
+            'committerDate' => $committerDate,
+        ];
     }
 
     /**
@@ -48,6 +78,21 @@
 
         foreach ($projectList as $projectName) {
 
+            /**
+             * Process project list
+             */
+
+            // .git file path of project
+            $projectGitPath = join(DIRECTORY_SEPARATOR, [$rootDir, $projectName, '.git']);
+
+            // Build git info of project
+            $result[$projectName][] = [
+                'worktree' => $projectName,
+            ] + _getGitDetail($projectGitPath);
+
+            /**
+             * Process worktree list
+             */
             // Get absolute path of target project's "worktrees" directory
             $worktreesPath = join(DIRECTORY_SEPARATOR, [$rootDir, $projectName, '.git', 'worktrees']);
 
@@ -59,27 +104,14 @@
                 // Get absolute path of worktree's .git file
                 $worktreeGitPath = join(DIRECTORY_SEPARATOR, [$rootDir, $worktreeName, '.git']);
 
-                // Execute git log bash to get last commit raw body (unwrapped subject and body)
-                $commitBody = [];
-                exec('git --git-dir=' . $worktreeGitPath . ' log --pretty="%B" -n1', $commitBody);
-
-                // Execute git log bash to get last commit ID in short
-                $commitHashID = trim(exec('git --git-dir=' . $worktreeGitPath . ' log --pretty="%h" -n1'));
-
-                // Execute git log bash to get last commit date in ISO 8601-like format
-                $commitDate = trim(exec('git --git-dir=' . $worktreeGitPath . ' log --pretty="%ci" -n1'));
-
                 // Get absolute path of worktree's Git HEAD file
                 $worktreeHeadPath = join(DIRECTORY_SEPARATOR, [$worktreesPath, $worktreeName, 'HEAD']);
 
-                // Fill in the Git detail info of worktree
+                // Build git info of worktree
                 $result[$projectName][] = [
                     'worktree' => $worktreeName,
                     'branch' => end(explode(DIRECTORY_SEPARATOR, file_get_contents($worktreeHeadPath))),
-                    'commitBody' => implode('<br>', $commitBody),
-                    'commitID' => $commitHashID,
-                    'commitDate' => $commitDate,
-                ];
+                ] + _getGitDetail($worktreeGitPath);
             }
         }
 
@@ -110,6 +142,16 @@
   .design-layout {
     margin-top: 5vh !important;
     margin-bottom: 5vh !important;
+  }
+
+  .master-row {
+    color: #c44569 !important;
+    font-weight: bolder;
+  }
+
+  .accordion-button {
+    font-size: 1.5rem !important;
+    font-weight: bolder;
   }
 </style>
 
@@ -237,14 +279,17 @@
           // Build popover
           popoverBlock.build($deleteBtn, row);
 
-          $('<tr>')
+          let $tr = $('<tr>')
             .append($('<th>').addClass('align-middle').prop({scope: 'row'}).append($deleteBtn))
             .append($('<td>').addClass('align-middle').text(row.worktree))
             .append($('<td>').addClass('align-middle').text(row.branch))
             .append($('<td>').addClass('align-middle').html(row.commitBody))
             .append($('<td>').addClass('align-middle').text(row.commitID))
-            .append($('<td>').addClass('align-middle').text(row.commitDate))
-            .appendTo($tbody);
+            .append($('<td>').addClass('align-middle').text(row.committerDate))
+
+          idx === 0 && $tr.addClass('master-row');
+
+          $tr.appendTo($tbody);
         });
 
         return $table;
@@ -259,7 +304,6 @@
       },
       data: WORKTREE_INFO,
       init: function () {
-        console.log(this.data);
 
         // The HTML block for accordion
         let $block = accordionBlock.el.$block;
