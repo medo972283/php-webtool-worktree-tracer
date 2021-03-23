@@ -230,6 +230,7 @@
     // Popover Block
     var popoverBlock = {
       option: {
+        trigger: 'focus',
         html: true,
         container: 'body',
         content: '',
