@@ -46,6 +46,9 @@
         // Get absolute path of git HEAD file
         $gitHeadPath = join(DIRECTORY_SEPARATOR, [$gitPath, 'HEAD']);
 
+        // Execute git config bash to get remote orgin repository
+        $remoteRepository = trim(exec('git --git-dir=' . $gitPath . ' config --get remote.origin.url'));
+
         // Execute git log bash to get last commit raw body (unwrapped subject and body)
         $commitBody = [];
         exec('git --git-dir=' . $gitPath . ' log --pretty="%B" -n1', $commitBody);
@@ -58,6 +61,7 @@
 
         // Return the git info
         return [
+            'repository' => $remoteRepository,
             'branch' => end(explode(DIRECTORY_SEPARATOR, file_get_contents($gitHeadPath))),
             'commitBody' => implode('<br>', $commitBody),
             'commitID' => $commitHashID,
@@ -139,9 +143,9 @@
     display: none;
   }
 
-  .design-layout {
-    margin-top: 5vh !important;
-    margin-bottom: 5vh !important;
+  .container-main {
+    max-width: unset !important;
+    padding: 5vh;
   }
 
   .master-row {
@@ -149,10 +153,18 @@
     font-weight: bolder;
   }
 
-  .accordion-button {
+  .accordion-title {
     font-size: 1.5rem !important;
     font-weight: bolder;
+    color: #000000 !important;
   }
+
+  .accordion-info {
+    padding-left: 20px;
+    font-size: 1rem !important;
+    color: #000000 !important;
+  }
+
 </style>
 
 <!DOCTYPE html>
@@ -161,7 +173,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Worktree Tracer - Display git info of project and it's worktrees </title>
-    <link rel="icon" type="image/x-icon" href="images/favicon.ico"/>
+    <link rel="icon" href="images/favicon.svg"/>
     <!-- Bootstrap css v5.0.0 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl" crossorigin="anonymous">
     <!-- jQuery v3.5.1 -->
@@ -170,9 +182,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js" integrity="sha384-b5kHyXgcpbZJO/tY9Ul7kGkf1S0CWuKcCD38l8YkeH8z8QjE0GmW1gYU5S9FOnJ0" crossorigin="anonymous"></script>
   </head>
   <body>
-    <div class="container">
+    <div class="container-main">
       <div class="row">
-        <div class="accordion-block design-layout"></div>
+        <div class="accordion-block"></div>
       </div>
     </div>
   </body>
@@ -199,12 +211,12 @@
   <table class="table table-striped table-hover">
     <thead>
       <tr>
-        <th scope="col"></th>
-        <th scope="col">Worktree</th>
-        <th scope="col">Branch</th>
-        <th scope="col">Last Commit</th>
-        <th scope="col">Commit ID</th>
-        <th scope="col">Committer Date</th>
+        <th scope="col" style="width: 5%"></th>
+        <th scope="col" style="width: 15%">Worktree</th>
+        <th scope="col" style="width: 15%">Branch</th>
+        <th scope="col" style="width: 45%">Last Commit</th>
+        <th scope="col" style="width: 10%">Commit ID</th>
+        <th scope="col" style="width: 10%">Committer Date</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -221,7 +233,7 @@
     'use strict';
 
     // Main element
-    var $mainEl = $('.container');
+    var $mainEl = $('.container-main');
 
     // Constructor
     var constructor = function () {
@@ -317,11 +329,22 @@
           let $accordionItem = accordionBlock.el.$accordionItem.clone();
           let $table = tableBlock.build(rows);
 
+          let $titleWrapper = $('<div>');
+          $('<span>')
+            .addClass('accordion-title')
+            .text(project)
+            .appendTo($titleWrapper);
+          $('<span>')
+            .addClass('accordion-info')
+            .text(rows[0].repository)
+            .appendTo($titleWrapper);
+
           // accordion-button
           $accordionItem
             .find('.accordion-button')
             .attr('data-bs-target', `#collapse-${project}`)
-            .text(project);
+            .append($titleWrapper);
+            // .text(`${project} | ${rows[0].repository}`);
 
           // accordion-collapse
           $accordionItem
@@ -333,7 +356,6 @@
           // Append table element to accordion item
           $accordionItem
             .find('.accordion-body')
-            .addClass('font-monospace')
             .append($table);
 
           $accordionWrapper.append($accordionItem);
