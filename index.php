@@ -237,13 +237,36 @@
 
     // Constructor
     var constructor = function () {
+      // initialze body
+      bodyBlock.init();
+
+      // initialze the accordion
       accordionBlock.init();
     };
+
+    // Body
+    var bodyBlock = {
+      $el: $('body'),
+      init: function () {
+        this.attachEvent();
+      },
+      attachEvent: function () {
+        // Attach mousedown event listener on body
+        this.$el.on('mousedown', (event) => {
+          let isPopover = $(event.target).closest('.bs-popover-end').length === 1;
+          let isDelBtn = $(event.target).closest('.ctrl-delete-btn').length === 1;
+
+          if (!isPopover && !isDelBtn) {
+            this.$el.find('.bs-popover-end').popover('hide');
+          }
+        });
+      },
+    }
 
     // Popover Block
     var popoverBlock = {
       option: {
-        trigger: 'focus',
+        trigger: 'click',
         html: true,
         container: 'body',
         content: '',
