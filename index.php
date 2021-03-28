@@ -36,40 +36,6 @@
     }
 
     /**
-     * Execute bash command of git to get git log info
-     *
-     * @param  string  $gitPath
-     * @return array
-     */
-    function _getGitDetail($gitPath)
-    {
-        // Get absolute path of git HEAD file
-        $gitHeadPath = join(DIRECTORY_SEPARATOR, [$gitPath, 'HEAD']);
-
-        // Execute git config bash to get remote orgin repository
-        $remoteRepository = trim(exec('git --git-dir=' . $gitPath . ' config --get remote.origin.url'));
-
-        // Execute git log bash to get last commit raw body (unwrapped subject and body)
-        $commitBody = [];
-        exec('git --git-dir=' . $gitPath . ' log --pretty="%B" -n1', $commitBody);
-
-        // Execute git log bash to get last commit ID in short
-        $commitHashID = trim(exec('git --git-dir=' . $gitPath . ' log --pretty="%h" -n1'));
-
-        // Execute git log bash to get last commit date in ISO 8601-like format
-        $committerDate = trim(exec('git --git-dir=' . $gitPath . ' log --pretty="%ci" -n1'));
-
-        // Return the git info
-        return [
-            'repository' => $remoteRepository,
-            'branch' => end(explode(DIRECTORY_SEPARATOR, file_get_contents($gitHeadPath))),
-            'commitBody' => implode('<br>', $commitBody),
-            'commitID' => $commitHashID,
-            'committerDate' => $committerDate,
-        ];
-    }
-
-    /**
      * Get the git info of worktrees that belongs to the Project
      *
      * @param  string  $rootDir
@@ -122,6 +88,40 @@
         return $result;
     }
 
+    /**
+     * Execute bash command of git to get git log info
+     *
+     * @param  string  $gitPath
+     * @return array
+     */
+    function _getGitDetail($gitPath)
+    {
+        // Get absolute path of git HEAD file
+        $gitHeadPath = join(DIRECTORY_SEPARATOR, [$gitPath, 'HEAD']);
+
+        // Execute git config bash to get remote orgin repository
+        $remoteRepository = trim(exec('git --git-dir=' . $gitPath . ' config --get remote.origin.url'));
+
+        // Execute git log bash to get last commit raw body (unwrapped subject and body)
+        $commitBody = [];
+        exec('git --git-dir=' . $gitPath . ' log --pretty="%B" -n1', $commitBody);
+
+        // Execute git log bash to get last commit ID in short
+        $commitHashID = trim(exec('git --git-dir=' . $gitPath . ' log --pretty="%h" -n1'));
+
+        // Execute git log bash to get last commit date in ISO 8601-like format
+        $committerDate = trim(exec('git --git-dir=' . $gitPath . ' log --pretty="%ci" -n1'));
+
+        // Return the git info
+        return [
+            'repository' => $remoteRepository,
+            'branch' => end(explode(DIRECTORY_SEPARATOR, file_get_contents($gitHeadPath))),
+            'commitBody' => implode('<br>', $commitBody),
+            'commitID' => $commitHashID,
+            'committerDate' => $committerDate,
+        ];
+    }
+
     // Root directory
     $rootDir = dirname(dirname(__FILE__));
 
@@ -132,7 +132,7 @@
     $worktreeInfo = getWorktreeInfo($rootDir, $nativeProjectList);
 ?>
 
-<!-- Get PHP value -->
+<!-- Send PHP variable to the frontend -->
 <script type="text/javascript">
   const WORKTREE_INFO = Object.freeze(<?= json_encode($worktreeInfo); ?>);
 </script>
